@@ -7,20 +7,18 @@
     },
     {
         "username": "Ahnaf",
-        "coins": 3,
+        "coins": 2,
         "cards": [
-            "Ambassador",
-            "Duke",
-            "Contessa"
+            "Spy",
+            "Assasin"
         ],
         "isAlive": true
     },
     {
         "username": "Atalukd2",
-        "coins": 4,
+        "coins": 2,
         "cards": [
-            "Duke",
-            "Captain",
+            "Assasin",
             "Assasin"
         ],
         "isAlive": true
