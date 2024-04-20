@@ -36,7 +36,6 @@ class Gameplay(commands.Cog):
                 with open('./data/gameplay.json', 'w') as file:
                     json.dump(gameplay_stat, file)
 
-      
 
     @commands.command()
     async def initiate(self, ctx):

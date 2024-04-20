@@ -6,21 +6,17 @@
         "isAlive": false
     },
     {
-        "username": "Ahnaf",
-        "coins": 2,
+        "username": "Sung",
+        "coins": 1,
         "cards": [
-            "Spy",
-            "Assasin"
+            "Captain"
         ],
         "isAlive": true
     },
     {
-        "username": "Atalukd2",
+        "username": "Ahnaf",
         "coins": 2,
-        "cards": [
-            "Assasin",
-            "Assasin"
-        ],
-        "isAlive": true
+        "cards": [],
+        "isAlive": false
     }
 ]
