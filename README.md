@@ -14,6 +14,8 @@ Each player is dealt two character cards face down, which they keep hidden from 
 Coup is a game of deception and strategy. Each player starts with two cards, and the goal is to be the last player with influence left in the game.
 
 **Basic Commands:**
+- `!start_game`: Start the game.
+- `!begin_game`: Begin the game to start using abilities.
 - `!join_game`: Join the game.
 - `!check_coins [optional: @player]`: Check your coins or another player's coins.
 - `!check_cards [optional: @player]`: Check your cards or another player's cards.
