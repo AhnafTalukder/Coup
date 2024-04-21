@@ -4,7 +4,7 @@ import discord
 import json
 from discord.ext import commands
 
-cardList = ['Assasin', 'Assasin', 'Assasin', 'Contessa', 'Contessa', 'Contessa',  'Duke', 'Duke', 'Duke',  'Captain', 'Captain','Captain', 'Ambassador', 'Ambassador', 'Ambassador', 'Spy', 'Spy'
+cardList = ['Assassin', 'Assassin', 'Assassin', 'Contessa', 'Contessa', 'Contessa',  'Duke', 'Duke', 'Duke',  'Captain', 'Captain','Captain', 'Ambassador', 'Ambassador', 'Ambassador', 'Spy', 'Spy'
             ,'Spy', 'Politician', 'Politician', 'Politician']
 
 class Gameplay(commands.Cog):
@@ -29,22 +29,22 @@ class Gameplay(commands.Cog):
             else:
                 gameplay_stat["game_in_progress"] = True
 
-                await ctx.send("A game has been started. Once everyone has joined using !join_game, use !initate to initiate the game.")
+                await ctx.send("A game has been started. Once everyone has joined using !join_game, use !begin_game to start the game.")
                 
                 gameplay_stat["people_can_join"] = True
+                gameplay_stat["game_ended"] = False
 
                 with open('./data/gameplay.json', 'w') as file:
                     json.dump(gameplay_stat, file)
 
-
     @commands.command()
-    async def initiate(self, ctx):
+    async def begin_game(self, ctx):
          with open('./data/gameplay.json', 'r+') as f:
             gameplay_stat = json.load(f)
 
             if(gameplay_stat["game_in_progress"] == True):
                 gameplay_stat["people_can_join"] = False
-                await ctx.send("A game of Coup has been initiated.")
+                await ctx.send("A game of Coup has begun.")
 
                 with open('./data/gameplay.json', 'w') as file:
                     json.dump(gameplay_stat, file)
@@ -89,14 +89,6 @@ class Gameplay(commands.Cog):
 
         await ctx.author.send(self.cards)
         await ctx.send(f"{self.name} has joined the Coup game.")
-
-
-    # ==========================================================================================
-    # ============================== Player Support Commands  ==================================
-    # ==========================================================================================
-    """
-    This section provides an overview of the commands available to players for assistance and information.
-    """
 
     @commands.command()
     async def check_coins(self, ctx, target: discord.Member = None):
@@ -145,6 +137,8 @@ class Gameplay(commands.Cog):
             "**Game Rules:**\n"
             "Coup is a game of deception and strategy. Each player starts with two cards, and the goal is to be the last player with influence left in the game.\n\n"
             "**Basic Commands:**\n"
+            "- `!start_game`: Start the game.\n"
+            "- `!begin_game`: Begin the game to start using abilities.\n"
             "- `!join_game`: Join the game.\n"
             "- `!check_coins [optional: @player]`: Check your coins or another player's coins.\n"
             "- `!check_cards [optional: @player]`: Check your cards or another player's cards.\n\n"
