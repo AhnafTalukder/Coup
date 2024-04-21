@@ -36,6 +36,7 @@ class Player(commands.Cog):
                 await ctx.send("You cannot use this command because you are not alive in the game.")
                 return
             
+            # initial_coins = pl['coins']
             found = False
             for player in players:
                 if player['username'] == ctx.author.display_name:
@@ -45,6 +46,12 @@ class Player(commands.Cog):
                         return
                      player['coins'] += 1
                      self.coins = player['coins']
+                    #  pl['coins'] += 1
+                    #  coins_test_passed = pl['coins'] == initial_coins + 1
+                    # if coins_test_passed:
+                    #     print("Coins Test Passed: Player's coin amount increased by one.")
+                    # else:
+                    #     print("Coins Test Failed: Player's coin amount did not increase as expected.")
 
             if(found == False):
                 await ctx.send(f'{ctx.author.display_name} has not joined the game.')
@@ -64,6 +71,8 @@ class Player(commands.Cog):
         with open('./data/players.json', 'r+') as a:
                 play = json.load(a)
                 pl = next((p for p in play if p['username'] == ctx.author.display_name), None)
+                # initial_coins = pl['coins']
+                # pl['coins'] += 2 
 
                 if pl is None:
                     await ctx.send("You are not registered in the game.")
@@ -72,7 +81,8 @@ class Player(commands.Cog):
                 if not pl['isAlive']:
                     await ctx.send("You cannot use this command because you are not alive in the game.")
                     return
-        
+                
+        # coins_test_passed = pl['coins'] == initial_coins + 2
         msg = await ctx.send(f"{ctx.author.display_name} is trying to take foreign aid. React with 🚫 to block.", file = file)
         await msg.add_reaction('🚫')
 
@@ -91,6 +101,10 @@ class Player(commands.Cog):
                         player['coins'] += 2
                         self.coins = player['coins']  
                         await ctx.send(f"{ctx.author.display_name} collected foreign aid. Total coins: {self.coins}")
+                        # if coins_test_passed:
+                        #     print("Coins Test Passed: Player's coin amount increased by two.")
+                        # else:
+                        #     print("Coins Test Failed: Player's coin amount did not increase as expected.")
                 
                 f.seek(0)
                 json.dump(players, f, indent=4)
@@ -149,6 +163,9 @@ class Player(commands.Cog):
             players = json.load(f)
             current_player = next((p for p in players if p['username'] == ctx.author.display_name), None)
 
+            # initial_coins = current_player['coins']
+            # initial_card_count = len(target_player['cards'])
+
             if current_player is None:
                 await ctx.send("You are not registered in the game.")
                 return
@@ -184,9 +201,22 @@ class Player(commands.Cog):
 
             target_player['cards'].pop(card_to_lose - 1)
 
+            # coins_test_passed = current_player['coins'] == initial_coins - 7
+            # cards_test_passed = len(target_player['cards']) == initial_card_count - 1
+
             f.seek(0)
             json.dump(players, f, indent=4)
             f.truncate()
+
+            # if coins_test_passed:
+            #     print("Coins Test Passed: Coin amount decreased by seven.")
+            # else:
+            #     print("Coins Test Failed: Coin amount did not decrease as expected.")
+
+            # if cards_test_passed:
+            #     print("Cards Test Passed: Target player has lost a card.")
+            # else:
+            #     print("Cards Test Failed: Target player card count did not decrease as expected.")
 
             with open('./data/players.json', 'r+') as f:
                 players = json.load(f)
@@ -269,12 +299,16 @@ class Player(commands.Cog):
             action_name, action_card = action_to_card[action]
 
             if action_card in challenged['cards']:
+                # initial_card_count_challenged = len(challenged['cards'])
+
                 await ctx.send(f"{challenged_user.display_name} successfully shows a {action_card}.")
                 challenged['cards'].remove(action_card)
                 cardList.append(action_card)  
                 new_card = random.choice(cardList)
                 challenged['cards'].append(new_card)
                 cardList.remove(new_card)
+
+                # truthful_test_passed = len(challenged['cards']) == initial_card_count_challenged 
 
                 emojis = ["1️⃣", "2️⃣"]
                 msg = await ctx.send(f"{challenger_user.display_name} has lost the challenge. React to lose one of your cards.")
@@ -293,7 +327,14 @@ class Player(commands.Cog):
                 if len(challenger['cards']) == 0:
                     challenger['isAlive'] = False
                     await ctx.send(f"{challenger_user.display_name} has no more cards and is now out of the game.")
+
+                # if truthful_test_passed:
+                #     print("Truthful Challenge Test Passed: Challenged player did not lose a card.")
+                # else:
+                #     print("Truthful Challenge Test Failed: The card count did not remain as expected for a truthful challenge.")
             else:
+                # initial_card_count_challenged = len(challenged['cards'])
+
                 emojis = ["1️⃣", "2️⃣"]
                 msg = await ctx.send(f"{challenged_user.display_name} has lost the challenge. React to lose one of your cards.")
                 for emoji in emojis[:len(challenged['cards'])]:
@@ -306,6 +347,8 @@ class Player(commands.Cog):
                 card_to_lose = challenged['cards'].pop(emojis.index(str(reaction.emoji)))
                 cardList.append(card_to_lose)
 
+                # bluffing_test_passed = len(challenged['cards']) == initial_card_count_challenged - 1
+
                 await ctx.send(f"{challenged_user.display_name} has lost a card.")
 
                 if len(challenged['cards']) == 0:
@@ -315,6 +358,12 @@ class Player(commands.Cog):
             f.seek(0)
             json.dump(players, f, indent=4)
             f.truncate()
+
+            # if bluffing_test_passed:
+            #     print("Bluffing Challenge Test Passed: Challenged player lost a card.")
+            # else:
+            #     print("Bluffing Challenge Test Failed: The card count did not decrease as expected for a bluffing challenge.")
+
             await self.check_winner(ctx)
 
     @commands.command()
@@ -377,10 +426,25 @@ class Player(commands.Cog):
                 players = json.load(f)
                 target_player = next((player for player in players if player['username'] == target.display_name), None)
                 stealing_player = next((player for player in players if player['username'] == ctx.author.display_name), None)
+
+                # initial_coins_stealing_player = stealing_player['coins']
+                # initial_coins_target_player = target_player['coins']
+
                 if target_player['coins'] > 0:
                     stolen_amount = 1 if target_player['coins'] == 1 else 2
                     target_player['coins'] -= stolen_amount
                     stealing_player['coins'] += stolen_amount
+
+                    # steal_test_passed = (
+                    # stealing_player['coins'] == initial_coins_stealing_player + stolen_amount and
+                    # target_player['coins'] == initial_coins_target_player - stolen_amount
+                    # )
+
+                    # if steal_test_passed:
+                    #     print(f"Steal Test Passed: {ctx.author.display_name} successfully stole {stolen_amount} coins from {target.display_name}.")
+                    # else:
+                    #     print(f"Steal Test Failed: Coin transfer did not occur as expected during steal.")
+
                     await ctx.send(f"{ctx.author.display_name} successfully stole {stolen_amount} coins from {target.display_name}.")
                 else:
                     await ctx.send(f"{target.display_name} has no coins to steal.")
@@ -403,6 +467,8 @@ class Player(commands.Cog):
                 await ctx.send("You cannot use this command because you are not alive in the game.")
                 return
 
+            # initial_coins = player['coins']
+
         file_path = r".\images\Duke.png"
         file = File(file_path, filename="Duke.png")
         await ctx.send(f"{ctx.author.display_name} is claiming to be a Duke and attempting to collect tax. React with '🤚' to challenge.", file=file)
@@ -424,7 +490,14 @@ class Player(commands.Cog):
             players = json.load(f)
             player = next((p for p in players if p['username'] == ctx.author.display_name), None)
             if player:
-                player['coins'] += 3  
+                player['coins'] += 3
+
+                # coins_test_passed = player['coins'] == initial_coins + 3
+                # if coins_test_passed:
+                #     print("Coins Test Passed: Coin amount increased by three.")
+                # else:
+                #     print("Coins Test Failed: Coin amount did not increase as expected.")
+
                 await ctx.send(f"{ctx.author.display_name} successfully collected tax. Total coins now: {player['coins']}.")
 
             f.seek(0)
@@ -559,6 +632,9 @@ class Player(commands.Cog):
                 await ctx.send(f'{target.display_name} is already dead and cannot be assassinated!')
                 return
 
+            # initial_coins_assassin = assassin['coins']
+            # initial_card_count_victim = len(victim['cards'])
+
             assassin['coins'] -= 3
             await ctx.send(f"{ctx.author.display_name} now has {assassin['coins']} coins.")
 
@@ -599,6 +675,20 @@ class Player(commands.Cog):
             except asyncio.TimeoutError:
                 await ctx.send(f"No one responded in time. {target.display_name} has been successfully assassinated!")
                 await self.card_loss(ctx, victim)
+
+            # coins_test_passed = assassin['coins'] == initial_coins_assassin - 3
+            # cards_test_passed = (not any(reaction.emoji == '🚫' for reaction, user in reactions_received)
+            #                     and len(victim['cards']) == initial_card_count_victim - 1)
+
+            # if coins_test_passed:
+            #     print("Coins Test Passed: Assassin's coin amount decreased by three.")
+            # else:
+            #     print("Coins Test Failed: Assassin's coin amount did not decrease as expected.")
+
+            # if cards_test_passed:
+            #     print("Cards Test Passed: Victim has lost a card.")
+            # else:
+            #     print("Cards Test Failed: Victim's card count did not decrease as expected.")
 
             f.seek(0)
             json.dump(players, f, indent=4)
