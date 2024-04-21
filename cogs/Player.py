@@ -206,28 +206,37 @@ class Player(commands.Cog):
                     f.truncate()  
                 else:
                     await ctx.send(f"{target_player_name} has lost a card.")
-        await self.winner(ctx)
+        await self.check_winner(ctx)
           
-    @commands.command()
-    async def winner(self, ctx):
+    async def check_winner(self, ctx):
+        file_path = r".\images\Winner.png"
+        file = File(file_path, filename="Winner.png")
         with open('./data/players.json', 'r') as f:
             players = json.load(f)
-            aliveCount = 0
+            alive_players = [player for player in players if player['isAlive']]
 
-            if(len(players) > 1):
-                for player in players:
-                    if(player['isAlive']):
-                        aliveCount += 1
+        if len(alive_players) == 1:
+            await ctx.send(f"{alive_players[0]['username']} is the winner!", file = file)
+            with open('./data/gameplay.json', 'r+') as g:
+                gameplay = json.load(g)
+                gameplay['game_in_progress'] = False
+                gameplay['people_can_join'] = False
+                gameplay['game_ended'] = True
+                g.seek(0)
+                json.dump(gameplay, g, indent=4)
+                g.truncate()
 
-                if(aliveCount > 1):
-                    await ctx.send("Game still in session.")
-                elif(aliveCount==1):
-                    for player in players:
-                        if(player['isAlive']):
-                            await ctx.send(f"{player['username']} is the winner!")
+            initial_data = [{
+                "username": "",
+                "coins": "",
+                "cards": [],
+                "isAlive": False
+            }]
 
-            else:
-                await ctx.send("You're not a winner if you're the only one playing.")
+            with open('./data/players.json', 'w') as f:
+                json.dump(initial_data, f, indent=4)  
+            return True
+        return False
 
     @commands.command()
     async def challenge(self, ctx, action: str, challenger_user: discord.Member, challenged_user: discord.Member):
@@ -245,8 +254,6 @@ class Player(commands.Cog):
                 'steal': ('steal from', 'Captain'),
                 'block_foreign_aid': ('block foreign aid', 'Duke'),
                 'block_duke_by_spy': ('counter-block a Duke\'s block', 'Spy'),
-                'block': ('block', 'Contessa'),
-                'assassinate ': ('assassinate ', 'Assassin'),
                 'exile': ('exile', 'Politician'),
                 'exchange': ('exchange', 'Ambassador'),
                 'block_exile_by_spy': ('block exile as Spy', 'Spy'),
@@ -304,11 +311,11 @@ class Player(commands.Cog):
                 if len(challenged['cards']) == 0:
                     challenged['isAlive'] = False
                     await ctx.send(f"{challenged_user.display_name} has no more cards and is now out of the game.")
-                
-            
+    
             f.seek(0)
             json.dump(players, f, indent=4)
             f.truncate()
+            await self.check_winner(ctx)
 
     @commands.command()
     async def steal(self, ctx, target: discord.Member):
@@ -552,7 +559,7 @@ class Player(commands.Cog):
                 await ctx.send(f'{target.display_name} is already dead and cannot be assassinated!')
                 return
 
-            assassin['coins'] -= 3  
+            assassin['coins'] -= 3
             await ctx.send(f"{ctx.author.display_name} now has {assassin['coins']} coins.")
 
             msg = await ctx.send(f"{ctx.author.display_name} is attempting to assassinate {target.display_name}. React with 🚫 to block or ✋ to challenge within 5 seconds.")
@@ -563,23 +570,31 @@ class Player(commands.Cog):
                 return user != self.bot.user and user != ctx.author and str(reaction.emoji) in ['🚫', '✋']
 
             try:
-                reaction, blocker = await self.bot.wait_for('reaction_add', timeout=5.0, check=check)
+                reaction, reactor = await self.bot.wait_for('reaction_add', timeout=5.0, check=check)
                 if str(reaction.emoji) == '🚫':
-                    msg_block = await ctx.send(f"{blocker.display_name} claims to block. React with ✋ to challenge this block within 5 seconds.")
+                    msg_block = await ctx.send(f"{reactor.display_name} claims to block with Contessa. React with ✋ to challenge this block.")
                     await msg_block.add_reaction('✋')
 
-                    def check_challenge_block(reaction, user):
-                        return user != self.bot.user and user != blocker and str(reaction.emoji) == '✋'
-
                     try:
-                        reaction_challenge, challenger = await self.bot.wait_for('reaction_add', timeout=5.0, check=check_challenge_block)
+                        reaction_challenge, challenger = await self.bot.wait_for('reaction_add', timeout=5.0, check=lambda r, u: u != self.bot.user and u != reactor and str(r.emoji) == '✋')
                         if challenger:
-                            await self.challenge(ctx, 'block', challenger, blocker)
+                            reactor_player = next((player for player in players if player['username'] == reactor.display_name), None)
+                            if 'Contessa' in [card for player in players if player['username'] == reactor.display_name for card in player['cards']]:
+                                await ctx.send(f"{reactor.display_name} successfully shows a Contessa.")
+                                challenger_player = next((player for player in players if player['username'] == challenger.display_name), None)
+                                await self.card_loss(ctx, challenger_player)
+                            else:
+                                await ctx.send(f"{reactor.display_name} does not have a Contessa.")
+                                await self.card_loss(ctx, reactor_player)
                     except asyncio.TimeoutError:
-                        await ctx.send(f"No challenges were made. {blocker.display_name}'s block is successful.")
-                        return  
+                        await ctx.send(f"No challenges were made. {reactor.display_name}'s block is successful.")
                 elif str(reaction.emoji) == '✋':
-                    await self.challenge(ctx, 'assassinate ', ctx.author, blocker) 
+                    if 'Assassin' in [card for player in players if player['username'] == ctx.author.display_name for card in player['cards']]:
+                        await ctx.send(f"{ctx.author.display_name} confirms an Assassin card.")
+                        await self.card_loss(ctx, victim)
+                    else:
+                        await ctx.send(f"{ctx.author.display_name} does not have an Assassin card.")
+                        await self.card_loss(ctx, assassin)
 
             except asyncio.TimeoutError:
                 await ctx.send(f"No one responded in time. {target.display_name} has been successfully assassinated!")
@@ -594,6 +609,19 @@ class Player(commands.Cog):
             player['cards'].pop()
             player['isAlive'] = False
             await ctx.send(f"{player['username']} has lost their last card and is now dead!")
+
+            with open('./data/players.json', 'r+') as f:
+                players = json.load(f)
+                for p in players:
+                    if p['username'] == player['username']:
+                        p['cards'] = player['cards']
+                        p['isAlive'] = player['isAlive']
+                f.seek(0)
+                json.dump(players, f, indent=4)
+                f.truncate()
+
+            await self.check_winner(ctx)
+            
         elif len(player['cards']) > 1:
             msg = await ctx.send(f"{player['username']} choose which card to lose by reacting with 1️⃣ or 2️⃣.")
             await msg.add_reaction('1️⃣')
@@ -603,12 +631,20 @@ class Player(commands.Cog):
 
             def check(reaction, user):
                 return user == member and str(reaction.emoji) in ['1️⃣', '2️⃣']
-        
+
             reaction, user = await self.bot.wait_for('reaction_add', timeout=60.0, check=check)
-            card_to_lose = int(reaction.emoji[0]) - 1  
+            card_to_lose = int(reaction.emoji[0]) - 1
             player['cards'].pop(card_to_lose)
             await ctx.send(f"{player['username']} has lost a card.")
 
+            with open('./data/players.json', 'r+') as f:
+                players = json.load(f)
+                for p in players:
+                    if p['username'] == player['username']:
+                        p['cards'] = player['cards']
+                f.seek(0)
+                json.dump(players, f, indent=4)
+                f.truncate()
 
     @commands.command()
     async def exchange(self, ctx):
